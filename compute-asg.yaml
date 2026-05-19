@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Production-Grade High-Availability Auto Scaling Group (ASG) Infrastructure Stack.
+  Deploys a self-healing, multi-AZ t3.micro EC2 fleet tied to an Application Load Balancer target group.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: production
+    Description: Environment name modifier to map cross-stack structural dependencies.
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: Dynamically queries the latest verified stable Amazon Linux 2023 AMI identifier.
+
+Resources:
+  # =========================================================================
+  # 1. COMPUTE TEMPLATE (Blueprint for Provisioning Managed Web Nodes)
+  # =========================================================================
+  AsgLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: TemplateAMI
+      LaunchTemplateData:
+        InstanceType: t3.micro
+        ImageId: !Ref LatestAmiId
+        SecurityGroupIds:
+          - !ImportValue production-ALB-SGId # Dynamically imports the perimeter firewall ID from the ALB stack
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: 8
+              VolumeType: gp3
+              DeleteOnTermination: true
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            # Real-world bootstrapping to setup the custom path verified in ALB validation metrics
+            yum update -y
+            yum install httpd -y
+            systemctl start httpd
+            systemctl enable httpd
+            mkdir -p /var/www/html/chaitanya
+            echo "<h1>Architecture Validation: High-Availability Fleet Node Ready</h1>" > /var/www/html/chaitanya/index.html
+      Tags:
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # =========================================================================
+  # 2. SCALING ENGINE (Enforcing Capacity & AZ Resilience Boundaries)
+  # =========================================================================
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: TestAutoscaling
+      LaunchTemplate:
+        LaunchTemplateId: !Ref AsgLaunchTemplate
+        Version: !GetAtt AsgLaunchTemplate.LatestVersionNumber
+      # Fully synchronized with parameters extracted from your system verification logs
+      MinSize: '2'
+      MaxSize: '2'
+      DesiredCapacity: '2'
+      DefaultCooldown: '300'
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 40
+      # Spans public boundaries to guarantee high-availability fault tolerance across zones
+      VPCZoneIdentifier:
+        - subnet-085b2f918341eefb1 # eu-west-1a target subnet mapped from your network profile
+        - subnet-0000ba162304dd0ba # eu-west-1b target subnet mapped from your network profile
+      TargetGroupARNs:
+        - !ImportValue production-TG1-Arn # Connects seamlessly to the Target Group exported by the ALB stack
+      MetricsCollection:
+        - Granularity: "1Minute"
+      NewInstancesProtectedFromScaleIn: false
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: '1'
+        MaxBatchSize: '1'
+        WaitOnResourceSignals: false
+
+# =========================================================================
+# 3. OUTPUTS
+# =========================================================================
+Outputs:
+  AsgName:
+    Description: Name of the active resilient Auto Scaling Group
+    Value: !Ref AutoScalingGroup
+    Export:
+      Name: !Sub "${EnvironmentName}-ASG-Name"
