@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Production-Grade High-Availability Application Load Balancer (ALB) Infrastructure Stack.
+  Deploys an Internet-facing ALB routing multi-port target configurations across isolated availability zones.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: production
+    Description: Target execution environment descriptor for logical resource grouping.
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-018ed8bcf00bb8123
+    Description: Production VPC boundary where the ALB network interfaces resolve.
+
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: "subnet-0000ba162304dd0ba,subnet-0ff3f1eb2059fe2ad,subnet-085b2f918341eefb1"
+    Description: Multi-AZ Public subnets mapping to eu-west-1a, eu-west-1b, and eu-west-1c for structural ingress failover.
+
+Resources:
+  # =========================================================================
+  # 1. SECURITY CONTROLS (Ingress Firewall Scoping)
+  # =========================================================================
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "Enforces strict perimeter routing rules for ${EnvironmentName} public ALB ingress traffic."
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Ingress application delivery route over standard HTTP port 80.
+        - IpProtocol: tcp
+          FromPort: 81
+          ToPort: 81
+          CidrIp: 0.0.0.0/0
+          Description: Ingress delivery route for microservice stack on port 81.
+        - IpProtocol: tcp
+          FromPort: 82
+          ToPort: 82
+          CidrIp: 0.0.0.0/0
+          Description: Ingress delivery route for microservice stack on port 82.
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-alb-sg"
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # =========================================================================
+  # 2. TRAFFIC CONTROLLER (The Application Load Balancer Engine)
+  # =========================================================================
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: ApplicationLB
+      Scheme: internet-facing
+      Type: application
+      IpAddressType: ipv4
+      Subnets: !Ref PublicSubnets
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      LoadBalancerAttributes:
+        - Key: routing.http.drop_invalid_header_fields.enabled
+          Value: 'true'
+        - Key: deletion_protection.enabled
+          Value: 'false'
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Owner
+          Value: chaitanya-chintappanavar
+
+  # =========================================================================
+  # 3. ROUTING LOGIC & LISTENERS (Multi-Port Decoupled Ingress Management)
+  # =========================================================================
+  HTTPListenerPort80:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup1
+
+  HTTPListenerPort81:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 81
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup2
+
+  HTTPListenerPort82:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 82
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup3
+
+  # =========================================================================
+  # 4. BACKEND FLEET TARGETS (Compute Target Layer)
+  # =========================================================================
+  TargetGroup1:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: TG1
+      VpcId: !Ref VpcId
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'false' # Confirmed 'Off' via live validation to enforce strict round-robin routing
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /chaitanya
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-tg1"
+
+  TargetGroup2:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: TG2
+      VpcId: !Ref VpcId
+      Port: 81
+      Protocol: HTTP
+      TargetType: instance
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'false'
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-tg2"
+
+  TargetGroup3:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: TG3
+      VpcId: !Ref VpcId
+      Port: 82
+      Protocol: HTTP
+      TargetType: instance
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'false'
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-tg3"
+
+# =========================================================================
+# 5. ARCHITECTURAL EXPORTS (Cross-Stack Outputs for ASG Binding)
+# =========================================================================
+Outputs:
+  LoadBalancerDnsName:
+    Description: Public fully qualified domain (e.g., applicationlb-480902371.eu-west-1.elb.amazonaws.com)
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub "${EnvironmentName}-ALB-DNSName"
+
+  CanonicalHostedZoneID:
+    Description: ALB Canonical Hosted Zone ID (Z32O12XQLNTSW2 for eu-west-1 mapping)
+    Value: Z32O12XQLNTSW2
+    Export:
+      Name: !Sub "${EnvironmentName}-ALB-HostedZoneID"
+
+  TargetGroup1Arn:
+    Description: Target Group 1 binding reference ARN.
+    Value: !Ref TargetGroup1
+    Export:
+      Name: !Sub "${EnvironmentName}-TG1-Arn"
