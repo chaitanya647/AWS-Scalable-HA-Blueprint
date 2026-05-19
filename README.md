@@ -22,24 +22,24 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 **Goal:** Provision a self-healing, multi-AZ t3.micro EC2 compute fleet that dynamically maintains instance availability and automates rolling application updates.
 
 ### Project Screenshots:
-![EC2 Fleet Target Allocations](Images/auto%201.png)
+![EC2 Fleet Target Allocations](Images/auto%201.jpg)
 ![Capacity Scale Boundaries](Images/auto%202.png)
 ![Scaling Engine Activity Logs](Images/auto%203.png)
-![Group Metric Specifications](Images/auto%204.png)
-![Health Grace Policies](Images/auto%205.png)
+![Group Metric Specifications](Images/auto%204.jpg)
+![Health Grace Policies](Images/auto%205.jpg)
 
 ---
 
-## 💽 Project 3: [Linux-Block-Storage-Administration](./)
-*(EBS Persistent Volume Mount & Hardware Table Mappings)*
+## 💽 Project 3: [Linux-Block-Storage-Administration](./linux-block-storage-administration)
+*(Click title for automated EBS initialization shell script)*
 
 **Goal:** Attach, initialize, and map raw secondary AWS EBS block volumes dynamically using system sector layouts formatted under the XFS journaling filesystem.
 
 ### Project Screenshots:
-![EBS Block Volume Allocations](Images/EBS1.png)
+![EBS Block Volume Allocations](Images/EBS1.jpg)
 ![System Mount Target Bindings](Images/EBS2.png)
 ![Hardware Controller Partition Table](Images/EBS3.png)
-![Active Active Disk Usage Space Map](Images/EBS4.png)
+![Active Active Disk Usage Space Map](Images/EBS4.jpg)
 
 ---
 
@@ -51,4 +51,4 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 ---
 
 ## 👤 Author
-**Chaitanya Chintappanavar** DevOps Cloud & Linux Infrastructure Engineer
+**Chaitanya Chintappanavar** — *DevOps Cloud & Linux Infrastructure Engineer*
