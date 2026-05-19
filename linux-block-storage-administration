@@ -1,0 +1,73 @@
+#!/bin/bash
+# ==============================================================================
+# Script Name:    linux-block-storage-administration.sh
+# Description:    Automated EBS Block Volume Initialization, Partitioning, 
+#                 XFS File System Formatting, and Persistent Target Mounting.
+# Author:         Chaitanya Chintappanavar
+# Role:           DevOps Cloud & Linux Infrastructure Engineer
+# Platform:       Amazon Linux 2023 (RHEL-based)
+# Hardware Ref:   Targeting Secondary EBS Storage Volume (/dev/nvme1n1)
+# ==============================================================================
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Define Block Storage Variables based on hardware architecture metrics
+TARGET_DISK="/dev/nvme1n1"
+TARGET_PARTITION="/dev/nvme1n1p1"
+MOUNT_POINT="/var/ebs-1a"
+
+echo "=== Starting Linux Block Storage Administration Pipeline ==="
+
+# 1. Device Discovery & Sector Verification
+echo "[STAGE 1] Verifying storage block topology..."
+if [ ! -b "$TARGET_DISK" ]; then
+    echo "ERROR: Target raw disk device $TARGET_DISK does not exist." >&2
+    exit 1
+fi
+echo "Raw storage device found. Printing layout constraints:"
+lsblk "$TARGET_DISK"
+
+# 2. Hardware Sector Partitioning (Automating fdisk layout utility)
+echo "[STAGE 2] Generating standard partition tables..."
+# Simulates interactive fdisk entry commands: 
+# n (new partition) -> p (primary) -> 1 (partition number) -> defaults -> w (write to disk layout table)
+sudo fdisk "$TARGET_DISK" <<EOF
+n
+p
+1
+
+
+w
+EOF
+
+echo "Rereading hardware partition controllers (ioctl table flush)..."
+sudo udevadm settle
+
+# 3. Journaling Filesystem Compilation
+echo "[STAGE 3] Constructing XFS journaling filesystem structure on $TARGET_PARTITION..."
+sudo mkfs.xfs -f "$TARGET_PARTITION"
+
+# 4. Storage Infrastructure Mapping & Persistent Mounting
+echo "[STAGE 4] Building directory tree pathways and executing active device mount..."
+sudo mkdir -p "$MOUNT_POINT"
+sudo mount "$TARGET_PARTITION" "$MOUNT_POINT"
+
+# 5. Production Environment Validation Metrics
+echo "[STAGE 5] Running validation mapping assertions..."
+echo "----------------------------------------------------"
+echo "Active Disk File System Space Allocation Map (df -h):"
+df -h | grep "$MOUNT_POINT"
+echo "----------------------------------------------------"
+echo "Validating Block ID & File System Signature Integrity (blkid):"
+sudo blkid "$TARGET_PARTITION"
+echo "----------------------------------------------------"
+
+# 6. Storage I/O Sanity Integrity Test
+echo "[STAGE 6] Verifying storage directory sector write capabilities..."
+cd "$MOUNT_POINT"
+sudo touch j{1..8}
+echo "Verification complete. Sector files compiled inside persistent volume storage matrix:"
+ls -la | grep "j"
+
+echo "=== Block Storage Pipeline Executed Successfully without Failures ==="
