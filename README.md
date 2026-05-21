@@ -39,7 +39,7 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 ![EBS Block Volume Allocations](Images/EBS1.jpg)
 ![System Mount Target Bindings](Images/EBS2.png)
 ![Hardware Controller Partition Table](Images/EBS3.png)
-![Active Active Disk Usage Space Map](Images/EBS4.jpg)
+
 
 ---
 
