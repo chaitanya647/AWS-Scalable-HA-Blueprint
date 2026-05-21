@@ -22,11 +22,11 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 **Goal:** Provision a self-healing, multi-AZ t3.micro EC2 compute fleet that dynamically maintains instance availability and automates rolling application updates.
 
 ### Project Screenshots:
-![EC2 Fleet Target Allocations](Images/auto%201.jpg)
-![Capacity Scale Boundaries](Images/auto%202.png)
-![Scaling Engine Activity Logs](Images/auto%203.png)
-![Group Metric Specifications](Images/auto%204.jpg)
-![Health Grace Policies](Images/auto%205.jpg)
+![EC2 Fleet Target Allocations](Images/auto1.png)
+![Capacity Scale Boundaries](Images/auto2.png)
+![Scaling Engine Activity Logs](Images/auto3.png)
+![Group Metric Specifications](Images/auto4.png)
+![Health Grace Policies](Images/auto5.png)
 
 ---
 
@@ -36,10 +36,9 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 **Goal:** Attach, initialize, and map raw secondary AWS EBS block volumes dynamically using system sector layouts formatted under the XFS journaling filesystem.
 
 ### Project Screenshots:
-![EBS Block Volume Allocations](Images/EBS1.jpg)
+![EBS Block Volume Allocations](Images/EBS1.png)
 ![System Mount Target Bindings](Images/EBS2.png)
 ![Hardware Controller Partition Table](Images/EBS3.png)
-
 
 ---
 
