@@ -47,7 +47,7 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 * **Linux Systems Administration:** Bootstrapping Systems Execution (UserData), Bash Shell scripting, XFS System Layout Utilities
 * **Core Competencies:** Decoupled Cloud Architecture Design, Cross-Stack Reference Binding (`!ImportValue`), Multi-AZ High-Availability Failovers
 
-----
+---
 
 ## 👤 Author
 **Chaitanya Chintappanavar** — *DevOps Cloud & Linux Infrastructure Engineer*
