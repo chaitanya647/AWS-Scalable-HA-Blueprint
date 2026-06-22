@@ -30,7 +30,7 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 
 ---
 
-## 💽 Project 3: [Linux-Block-Storage-Administration](./linux-block-storage-administration)
+ 💽 Project 3: [Linux-Block-Storage-Administration](./linux-block-storage-administration)
 *(Click title for automated EBS initialization shell script)*
 
 **Goal:** Attach, initialize, and map raw secondary AWS EBS block volumes dynamically using system sector layouts formatted under the XFS journaling filesystem.
