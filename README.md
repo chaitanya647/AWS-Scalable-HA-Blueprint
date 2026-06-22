@@ -50,4 +50,4 @@ This repository showcases a professional portfolio of advanced AWS cloud infrast
 ---
 
 ## 👤 Author
-**Chaitanya Chintappanavar** — DevOps Cloud & Linux Infrastructure Engineer
+**Chaitanya Chintappanavar** — *DevOps Cloud & Linux Infrastructure Engineer*
